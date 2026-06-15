@@ -167,16 +167,11 @@ Two environment files are provided:
 | `environment.yml` | Dependency specification with loose version bounds | **Normal use.** Create or recreate your environment from this file: `mamba env create -f environment.yml` |
 | `environment.lock.yml` | Cross-platform snapshot — key packages pinned to exact versions validated during development | **Strict reproducibility.** Use this if you need to replicate results exactly and the `environment.yml` install gives different behaviour: `mamba env create -f environment.lock.yml` |
 
-## 🗺️ AgCAP Expore Interactive Platform
-- ..
-- ...
-
 ## 🤝 Contact
-[Davide Mazzoni](https://github.com/orgs/SEforALL-IEAP/people/davidemazzoni2) - davidem@unops.org
-
-Robbert Hoeboer - robberth@unops.org
-
-[Alexandros Korkovelos](https://github.com/akorkovelos) - alexandrosk@unops.org 
+- Inocencio Gujamo - MIREME-UIPCE at inocencio.gujamo@gmail.com 
+- Imaculada Dos Santos - MIREME-UIPCE at Imaculada Dos Santos <imaculadamz@gmail.com>
+- Robbert Hoeboer - SEforALL at robberth@unops.org
+- [Alexandros Korkovelos](https://github.com/akorkovelos) - SEforALL at alexandrosk@unops.org 
 
 ## ⚖️ License
 
