@@ -34,9 +34,16 @@ from plotly.subplots import make_subplots
 warnings.filterwarnings('ignore')
 
 # Initialize hidden Tkinter root for file dialogs (only happens once now)
-root = tk.Tk()
-root.withdraw()
-root.attributes('-topmost', True)
+#root = tk.Tk()
+#root.withdraw()
+#root.attributes('-topmost', True)
+import os
+if os.environ.get('DISPLAY') or os.name == 'nt':
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+else:
+    root = None
 
 
 # --- FUNCTIONS ---
