@@ -533,14 +533,41 @@ def load_vector(path):
 
 
 # =========================================================
+# GEOMETRY PREPARATION
+# =========================================================
+
+def prepare_for_extraction(gdf):
+    """
+    Return a point-geometry copy of `gdf` for GEE sampling. Polygon input is
+    reduced to centroids (computed in a local UTM CRS for accuracy) since
+    TerraClimate's ~4,000 m native resolution makes a footprint-wide average
+    no more informative than a single point, and sampling points is cheaper.
+    Point input is returned unchanged. The original geometry in `gdf` itself
+    is never modified, so the caller can still merge results back onto it.
+    """
+    is_polygonal = gdf.geom_type.isin(["Polygon", "MultiPolygon"]).any()
+    if not is_polygonal:
+        return gdf
+
+    utm_crs = gdf.estimate_utm_crs()
+    centroids = gdf.geometry.to_crs(utm_crs).centroid.to_crs("EPSG:4326")
+
+    extraction_gdf = gdf.copy()
+    extraction_gdf["geometry"] = centroids
+    print(
+        f"  ℹ  Input contains polygon geometries — using centroids of {len(gdf):,} "
+        "feature(s) for GEE sampling."
+    )
+    print("     The output will retain the original polygons.")
+    return extraction_gdf
+
+
+# =========================================================
 # CHUNKED GEE EXTRACTION
 # =========================================================
 
-def extract_chunked(extraction_image, gdf, chunk_size, scale):
-    gdf = gdf.copy()
-    gdf["_tid"] = range(len(gdf))
-
-    total   = len(gdf)
+def extract_chunked(extraction_image, extraction_gdf, chunk_size, scale):
+    total   = len(extraction_gdf)
     n_chunks = (total + chunk_size - 1) // chunk_size
     print(f"  Total points : {total:,}")
     print(f"  Chunk size   : {chunk_size:,}  →  {n_chunks} request(s) to GEE")
@@ -549,7 +576,7 @@ def extract_chunked(extraction_image, gdf, chunk_size, scale):
     results = []
     for i in range(0, total, chunk_size):
         chunk_num = i // chunk_size + 1
-        chunk     = gdf.iloc[i : i + chunk_size][["_tid", "geometry"]]
+        chunk     = extraction_gdf.iloc[i : i + chunk_size][["_tid", "geometry"]]
         end_idx   = min(i + chunk_size, total)
         print(f"  [{chunk_num:>3}/{n_chunks}] Points {i + 1:,}–{end_idx:,}…", end=" ", flush=True)
 
@@ -569,7 +596,7 @@ def extract_chunked(extraction_image, gdf, chunk_size, scale):
         except Exception as exc:
             print(f"✖  Error: {exc}")
 
-    return results, gdf
+    return results
 
 
 # =========================================================
@@ -647,12 +674,16 @@ def main():
     section("Loading input data")
     print()
     gdf = load_vector(input_path)
+    gdf["_tid"] = range(len(gdf))
     print(f"  ✔  Loaded {len(gdf):,} features.")
+
+    # ── Prepare geometries for GEE sampling ─────────────────────────────────
+    extraction_gdf = prepare_for_extraction(gdf)
 
     # ── Extract ──────────────────────────────────────────────────────────────
     section("Extracting values from Google Earth Engine")
     print()
-    results, gdf = extract_chunked(extraction_image, gdf, chunk_size, scale)
+    results = extract_chunked(extraction_image, extraction_gdf, chunk_size, scale)
 
     if not results:
         print()
