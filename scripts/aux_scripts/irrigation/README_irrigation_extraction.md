@@ -5,7 +5,8 @@ irrigation need indicators derived from the
 [TerraClimate](https://www.climatologylab.org/terraclimate.html) global
 climatological dataset, accessed through **Google Earth Engine (GEE)**.
 
-The script takes the point vector file produced by the AgCAP analysis and adds
+The script takes the settlement vector file produced by the AgCAP analysis —
+either **points** or **polygons** (e.g. settlement footprints) — and adds
 four new attributes that describe, for each settlement, how many months per year
 (on average over the selected study period) fall into each irrigation need
 category:
@@ -39,8 +40,17 @@ data. For each month and each pixel, it:
 
 3. Sums how many months per year each settlement falls into each category,
    averaging across the full study period.
-4. Extracts those values at each settlement centroid via GEE's
-   `reduceRegions` API and merges them back into the original dataset.
+4. Extracts those values via GEE's `reduceRegions` API and merges them back
+   into the original dataset.
+
+If the input is a **polygon** layer, the script samples GEE at each polygon's
+**centroid** rather than averaging over the full footprint: TerraClimate's
+~4,000 m native resolution means a footprint-wide average adds no useful
+detail in most cases, and sampling a single point per feature is cheaper.
+Centroids are computed in a local UTM projection for accuracy, used only for
+the GEE query, and discarded afterwards — the **original polygon geometry**
+is what gets written to the output file. Point input is unaffected and used
+as-is.
 
 ---
 
@@ -190,6 +200,10 @@ to enrich. Accepted formats:
 | **FlatGeobuf** (`.fgb`) | Recommended — fast and compact |
 | **GeoPackage** (`.gpkg`) | Broadly compatible spatial format (QGIS, ArcGIS, GDAL) |
 | **CSV** (`.csv`) | Must contain a `geometry` column (WKT), or `lon`/`lat` (or `longitude`/`latitude`) columns |
+
+The geometry can be **points or polygons**. Polygon input is automatically
+sampled at its centroid for GEE extraction, but the output keeps the original
+polygon geometry — see [How it works](#how-it-works).
 
 > **Tip:** AgCAP analysis outputs a `.gpkg` file (`settlements_analyzed_*.gpkg`)
 > alongside any exported CSVs. Use the `.gpkg` if your CSV does not contain
